@@ -1,0 +1,8 @@
+base_url = "https://example.org"
+local_username = "matrix-bot"
+full_username = "@matrix-bot:example.org"
+
+# optional, will be used to generate a token by logging in
+password = "Plaintext password"
+# optional, will be populated by login automatically if using password
+token = "access_token from previous api calls"

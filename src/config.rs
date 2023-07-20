@@ -7,7 +7,7 @@ pub struct Config {
 	pub base_url: String,
     pub local_username: String,
 	pub full_username: String,
-    pub password: String,
+    pub password: Option<String>,
     pub token: Option<String>,
 }
 impl Config {

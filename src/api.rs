@@ -21,6 +21,7 @@ impl LoginRequestBody {
 }
 
 #[derive(Deserialize, Debug)]
+#[allow(dead_code)]
 struct LoginResponseBody {
     user_id: String,
     access_token: String,
@@ -29,6 +30,7 @@ struct LoginResponseBody {
 }
 
 #[derive(Deserialize, Debug)]
+#[allow(dead_code)]
 struct MatrixErrorResponseBody {
     errcode: String,
     error: String,
@@ -70,7 +72,7 @@ pub async fn verify_token(
 
 pub async fn login(config: &Config, client: &reqwest::Client) -> Result<String, ()> {
     let user = &config.local_username;
-    let password = &config.password;
+    let password = &config.password.clone().expect("Cannot login without password in config.toml");
 
     let login_url = format!("{}/_matrix/client/r0/login", config.base_url.as_str());
     let login_send_body_obj = LoginRequestBody::new(user.as_str(), password.as_str());
@@ -178,7 +180,7 @@ async fn verify_in_room(room: &str, config: &Config, client: &Client) -> bool {
 
 				println!("{:?}", members);
 			
-				return members.iter().any(|(k,v)| k == user_id);
+				return members.iter().any(|(k,_v)| k == user_id);
             }
         }
         None => {}
