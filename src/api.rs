@@ -1,8 +1,32 @@
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use thiserror::Error;
 
 use crate::config::Config;
+
+#[derive(Error, Debug)]
+pub enum ApiError {
+    #[error("HTTP request failed: {0}")]
+    Reqwest(#[from] reqwest::Error),
+    #[error("JSON serialization error: {0}")]
+    SerdeJson(#[from] serde_json::Error),
+    #[error("Missing password in configuration")]
+    MissingPassword,
+    #[error("Missing token in configuration")]
+    MissingToken,
+    #[error("Login failed with status: {0}")]
+    LoginFailed(u16),
+    #[error("Join room failed with status: {0}")]
+    JoinRoomFailed(u16),
+    #[error("HTTP Error")]
+    HttpError { source: reqwest::Error, url: String },
+    #[error("Matrix API Error")]
+    MatrixApiError {
+        status_code: reqwest::StatusCode,
+        error_message: String,
+    },
+}
 
 #[derive(Serialize, Debug)]
 struct LoginRequestBody {
@@ -55,24 +79,40 @@ pub async fn verify_token(
     token: &str,
     config: &Config,
     client: &reqwest::Client,
-) -> Result<String, ()> {
+) -> Result<String, ApiError> {
     let profile_url = format!(
         "{}/_matrix/client/r0/profile/{}",
         config.base_url.as_str(),
         config.full_username.as_str()
     );
-    client
+
+    let profile_url_clone = profile_url.clone();
+
+    let response = client
         .get(profile_url)
         .bearer_auth(token)
         .send()
         .await
-        .map_err(|_| ())?;
+        .map_err(|err| ApiError::HttpError {
+            source: err,
+            url: profile_url_clone,
+        })?;
+
+    if !response.status().is_success() {
+        let status = response.status();
+        let text = response.text().await.unwrap_or_default();
+        return Err(ApiError::MatrixApiError {
+            status_code: status,
+            error_message: text,
+        });
+    }
+
     Ok(token.to_owned())
 }
 
-pub async fn login(config: &Config, client: &reqwest::Client) -> Result<String, ()> {
+pub async fn login(config: &Config, client: &reqwest::Client) -> Result<String, ApiError> {
     let user = &config.local_username;
-    let password = &config.password.clone().expect("Cannot login without password in config.toml");
+    let password = config.password.clone().ok_or(ApiError::MissingPassword)?;
 
     let login_url = format!("{}/_matrix/client/r0/login", config.base_url.as_str());
     let login_send_body_obj = LoginRequestBody::new(user.as_str(), password.as_str());
@@ -83,18 +123,15 @@ pub async fn login(config: &Config, client: &reqwest::Client) -> Result<String, 
         .post(login_url)
         .body(login_send_body_json)
         .send()
-        .await
-        .expect("Login error");
+        .await?;
 
     if login_response.status().is_success() {
-        let login_response_json = login_response.text().await.expect("Login error");
-        let login_response_obj = serde_json::from_str::<LoginResponseBody>(&login_response_json)
-            .expect("Bad json response");
-        println!("{:?}", login_response_obj);
+        let login_response_json = login_response.text().await?;
+        let login_response_obj = serde_json::from_str::<LoginResponseBody>(&login_response_json)?;
         return Ok(login_response_obj.access_token);
     }
 
-    Err(())
+    Err(ApiError::LoginFailed(login_response.status().as_u16()))
 }
 
 pub async fn send_message(
@@ -102,8 +139,8 @@ pub async fn send_message(
     room: &str,
     config: &Config,
     client: &Client,
-) -> Result<(), ()> {
-    if !verify_in_room(room, config, client).await {
+) -> Result<(), ApiError> {
+    if !verify_in_room(room, config, client).await? {
         join_room(room, config, client).await?
     }
 
@@ -116,8 +153,8 @@ pub async fn send_message(
         &config.base_url.as_str(),
         room
     );
-    let token_string_opt = config.token.clone();
-    let token = token_string_opt.expect("Token could not be found during API calls");
+
+    let token = config.token.clone().ok_or(ApiError::MissingToken)?;
     let message_send_response_json = client
         .post(message_send_url)
         .body(message_send_body_json)
@@ -128,12 +165,11 @@ pub async fn send_message(
         .text()
         .await
         .expect("Send error");
-    println!("{}", message_send_response_json);
 
     Ok(())
 }
 
-async fn join_room(room: &str, config: &Config, client: &Client) -> Result<(), ()> {
+async fn join_room(room: &str, config: &Config, client: &Client) -> Result<(), ApiError> {
     match &config.token {
         Some(token) => {
             let join_url = format!(
@@ -145,18 +181,18 @@ async fn join_room(room: &str, config: &Config, client: &Client) -> Result<(), (
                 .post(join_url)
                 .bearer_auth(token.as_str())
                 .send()
-                .await
-                .expect("Join error");
+                .await?;
+
             if join_response.status().is_success() {
                 return Ok(());
             }
         }
         None => {}
     }
-    Err(())
+    Err(ApiError::JoinRoomFailed(403))
 }
 
-async fn verify_in_room(room: &str, config: &Config, client: &Client) -> bool {
+async fn verify_in_room(room: &str, config: &Config, client: &Client) -> Result<bool, ApiError> {
     match &config.token {
         Some(token) => {
             let join_url = format!(
@@ -168,22 +204,18 @@ async fn verify_in_room(room: &str, config: &Config, client: &Client) -> bool {
                 .get(join_url)
                 .bearer_auth(token.as_str())
                 .send()
-                .await
-                .expect("Room check error");
+                .await?;
+
             if join_response.status().is_success() {
-                let join_response_json: Value = join_response.json().await.expect("Room check error");
+                let join_response_json: Value = join_response.json().await?;
 
-				println!("{:?}", join_response_json);
+                let user_id = &config.full_username;
+                let members = join_response_json["joined"].as_object().unwrap();
 
-				let user_id = &config.full_username;
-				let members = join_response_json["joined"].as_object().unwrap();
-
-				println!("{:?}", members);
-			
-				return members.iter().any(|(k,_v)| k == user_id);
+                return Ok(members.iter().any(|(k, _v)| k == user_id));
             }
         }
         None => {}
     }
-    false
+    Ok(false)
 }

@@ -1,9 +1,8 @@
-mod config;
 mod api;
+mod config;
 
-use crate::{config::Config, api::send_message};
-
-use api::{verify_token, login};
+use crate::{api::send_message, config::Config};
+use api::{login, verify_token, ApiError};
 use clap::Parser;
 
 /// A simple to use bot for sending text messages to a Matrix room
@@ -20,29 +19,47 @@ struct Args {
 }
 
 #[async_std::main]
-async fn main() -> Result<(), ()> {
+async fn main() {
     let args = Args::parse();
-    let mut config = Config::new().map_err(|_| ())?;
+    let mut config = match Config::new() {
+        Ok(c) => c,
+        Err(e) => {
+            eprintln!("Failed to create new config: {}", e);
+            return;
+        }
+    };
     let client = reqwest::Client::new();
 
-    let token = get_token(&config, &client).await?;
-    config.token = Some(token);
-    config.save().map_err(|_| ())?;
+    match get_token(&config, &client).await {
+        Ok(token) => {
+            config.token = Some(token);
+            if let Err(e) = config.save() {
+                eprintln!("Failed to save config: {}", e);
+                return;
+            }
+        }
+        Err(e) => {
+            eprintln!("Failed to get token: {}", e);
+            return;
+        }
+    };
 
     let room = args.room;
     let message = args.message;
-    send_message(message.as_str(), room.as_str(), &config, &client).await.map_err(|_| ())?;
-
-    Ok(())
+    if let Err(e) = send_message(message.as_str(), room.as_str(), &config, &client).await {
+        eprintln!("Failed to send message: {}", e);
+    }
 }
 
-async fn get_token(config: &Config, client: &reqwest::Client) -> Result<String, ()> {
+async fn get_token(config: &Config, client: &reqwest::Client) -> Result<String, ApiError> {
     match config.token.clone() {
         Some(found_token) => match verify_token(found_token.as_str(), config, client).await {
             Ok(valid_token) => Ok(valid_token),
-            Err(_) => login(config, client).await,
+            Err(e) => {
+                eprintln!("Failed to verify token: {}", e);
+                login(config, client).await
+            }
         },
         None => login(config, client).await,
     }
 }
-
