@@ -146,7 +146,7 @@ pub async fn send_message(
 
     let message_send_body_obj = MessageSendRequestBody::new(message);
     let message_send_body_json =
-        serde_json::to_string(&message_send_body_obj).expect("Serialize failed on message body");
+        serde_json::to_string(&message_send_body_obj).map_err(ApiError::SerdeJson)?;
 
     let message_send_url = format!(
         "{}/_matrix/client/r0/rooms/{}/send/m.room.message",
@@ -155,16 +155,33 @@ pub async fn send_message(
     );
 
     let token = config.token.clone().ok_or(ApiError::MissingToken)?;
-    let message_send_response_json = client
-        .post(message_send_url)
+
+    let response = client
+        .post(message_send_url.clone())
         .body(message_send_body_json)
         .bearer_auth(token.as_str())
         .send()
         .await
-        .expect("Send error")
-        .text()
-        .await
-        .expect("Send error");
+        .map_err(|e| ApiError::HttpError {
+            source: e,
+            url: message_send_url.clone(),
+        })?;
+
+    let response_status = response.status();
+    let message_send_response = response.text().await.map_err(|err| ApiError::HttpError {
+        source: err,
+        url: message_send_url.clone(),
+    })?;
+
+    if !response_status.is_success() {
+        let error_message: MatrixErrorResponseBody =
+            serde_json::from_str(&message_send_response).map_err(ApiError::SerdeJson)?;
+
+        return Err(ApiError::MatrixApiError {
+            status_code: response_status,
+            error_message: error_message.error,
+        });
+    }
 
     Ok(())
 }

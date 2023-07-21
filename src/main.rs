@@ -21,7 +21,7 @@ struct Args {
 #[async_std::main]
 async fn main() {
     let args = Args::parse();
-    let mut config = match Config::new() {
+    let mut config = match Config::new("config.toml") {
         Ok(c) => c,
         Err(e) => {
             eprintln!("Failed to create new config: {}", e);
@@ -33,7 +33,7 @@ async fn main() {
     match get_token(&config, &client).await {
         Ok(token) => {
             config.token = Some(token);
-            if let Err(e) = config.save() {
+            if let Err(e) = config.save("config.toml") {
                 eprintln!("Failed to save config: {}", e);
                 return;
             }

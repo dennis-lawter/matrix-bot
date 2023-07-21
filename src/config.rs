@@ -22,14 +22,14 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn new() -> Result<Self, ConfigError> {
-        let contents = fs::read_to_string("config.toml")?;
+    pub fn new(config_filename: &str) -> Result<Self, ConfigError> {
+        let contents = fs::read_to_string(config_filename)?;
         let config: Config = toml::from_str(&contents)?;
         Ok(config)
     }
-    pub fn save(&self) -> Result<(), ConfigError> {
+    pub fn save(&self, config_filename: &str) -> Result<(), ConfigError> {
         let toml = toml::to_string(self)?;
-        fs::write("config.toml", toml)?;
+        fs::write(config_filename, toml)?;
         Ok(())
     }
 }
