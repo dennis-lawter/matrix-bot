@@ -80,11 +80,7 @@ pub async fn verify_token(
     config: &Config,
     client: &reqwest::Client,
 ) -> Result<String, ApiError> {
-    let profile_url = format!(
-        "{}/_matrix/client/r0/profile/{}",
-        config.base_url.as_str(),
-        config.full_username.as_str()
-    );
+    let profile_url = config.get_profile_url();
 
     let profile_url_clone = profile_url.clone();
 
@@ -97,6 +93,8 @@ pub async fn verify_token(
             source: err,
             url: profile_url_clone,
         })?;
+
+    // panic!("{:?}", response.text().await);
 
     if !response.status().is_success() {
         let status = response.status();
@@ -235,4 +233,61 @@ async fn verify_in_room(room: &str, config: &Config, client: &Client) -> Result<
         None => {}
     }
     Ok(false)
+}
+
+#[cfg(test)]
+mod tests {
+    use fake::{
+        faker::internet::en::{Password, Username},
+        Fake,
+    };
+
+    use crate::config::Config;
+
+    use super::verify_token;
+
+    #[tokio::test]
+    async fn test_test() {
+        let mut mock_server = mockito::Server::new();
+
+        let base_url = format!("http://{}", mock_server.host_with_port());
+
+        let config = Config {
+            base_url: base_url.clone(),
+            local_username: Username().fake(),
+            full_username: Username().fake(),
+            password: Password(16..24).fake(),
+            token: Some(Password(16..24).fake()),
+        };
+
+        let full_profile_url = config.get_profile_url();
+        let profile_url = full_profile_url
+            .strip_prefix(base_url.as_str())
+            .expect("Base URL missing from profile url");
+        let profile_response_body = format!(
+            r#"
+{{
+    "displayname": "{}",
+    "avatar_url": null
+}}
+"#,
+            config.local_username
+        );
+
+        let mock_endpoint = mock_server
+            .mock("GET", profile_url)
+            .with_status(200)
+            .with_body(profile_response_body.as_str())
+            .create();
+
+        let client = reqwest::Client::new();
+
+        let something =
+            verify_token(config.token.clone().unwrap().as_str(), &config, &client).await;
+
+        mock_endpoint.assert();
+
+        assert!(something.is_ok());
+        assert_eq!(something.unwrap(), config.token.unwrap().as_str());
+    }
 }

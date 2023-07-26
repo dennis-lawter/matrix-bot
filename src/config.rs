@@ -32,4 +32,12 @@ impl Config {
         fs::write(config_filename, toml)?;
         Ok(())
     }
+
+    pub fn get_profile_url(&self) -> String {
+        build_profile_url(self.base_url.as_str(), self.full_username.as_str())
+    }
+}
+
+pub fn build_profile_url(base_url: &str, username: &str) -> String {
+    format!("{}/_matrix/client/r0/profile/{}", base_url, username).to_owned()
 }
