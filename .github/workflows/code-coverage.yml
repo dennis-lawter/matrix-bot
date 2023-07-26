@@ -8,16 +8,8 @@ on:
 jobs:
   cover:
     runs-on: ubuntu-20.04
-    services:
-      redis:
-        image: redis:5.0.7
-        ports:
-          - 6379:6379
-        options: --entrypoint redis-server
     steps:
       - uses: actions/checkout@v3
-      - name: Install Protoc
-        uses: arduino/setup-protoc@v1
       - name: Install Stable Toolchain
         uses: dtolnay/rust-toolchain@stable
         with:

@@ -1,6 +1,21 @@
 # Matrix Bot
 A simple matrix bot written in rust.
 
+
+<p align="center">
+  <!-- version -->
+  <img src="https://img.shields.io/badge/version-0.1.0-blue"/>
+  <!-- CI -->
+  <img src="https://github.com/dennis-lawter/matrix-bot/workflows/CI/badge.svg" />
+  <!-- codecov -->
+  <img src="https://codecov.io/gh/dennis-lawter/matrix-bot/branch/master/graph/badge.svg" />
+  <!-- unsafe forbidden -->
+  <a href="https://github.com/rust-secure-code/safety-dance/">
+    <img src="https://img.shields.io/badge/unsafe-forbidden-success.svg?style=flat-square"
+      alt="Unsafe Rust forbidden" />
+  </a>
+</p>
+
 ## Config
 Copy `example.config.toml` to `config.toml` and change the fields to suit your needs.
 
