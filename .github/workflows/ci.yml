@@ -32,6 +32,7 @@ jobs:
         run: cargo clippy --all-features
       - name: Run Tests
         run: cargo test --all-features
+
   git-tag:
     runs-on: ubuntu-latest
     steps:
@@ -47,6 +48,7 @@ jobs:
           tag: ${{ steps.tag_version.outputs.new_tag }}
           name: Release ${{ steps.tag_version.outputs.new_tag }}
           body: ${{ steps.tag_version.outputs.changelog }}
+
   update-version-cargo-toml:
     name: Update version in Cargo.toml
     runs-on: ubuntu-latest
@@ -79,9 +81,11 @@ jobs:
             --label 'skip changelog' \
             --milestone $NEW_VERSION \
             --base $GITHUB_REF_NAME
-      - name: Create the Badge
-        uses: schneegans/dynamic-badges-action@v1.6.0
-        with:
-          label: Version
-          message: ${{ env.MAJOR }}.${{ env.MINOR }}.${{ env.PATCH }}
-          color: "blue"
+
+  badge-version:
+    name: Create the Badge
+    uses: schneegans/dynamic-badges-action@v1.6.0
+    with:
+      label: Version
+      message: ${{ env.MAJOR }}.${{ env.MINOR }}.${{ env.PATCH }}
+      color: "blue"
