@@ -83,9 +83,12 @@ jobs:
             --base $GITHUB_REF_NAME
 
   badge-version:
-    name: Create the Badge
-    uses: schneegans/dynamic-badges-action@v1.6.0
-    with:
-      label: Version
-      message: ${{ env.MAJOR }}.${{ env.MINOR }}.${{ env.PATCH }}
-      color: "blue"
+    name: Updates the version badge
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create the Badge
+        uses: schneegans/dynamic-badges-action@v1.6.0
+        with:
+          label: Version
+          message: ${{ env.MAJOR }}.${{ env.MINOR }}.${{ env.PATCH }}
+          color: "blue"
