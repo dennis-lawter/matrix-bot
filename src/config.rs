@@ -36,8 +36,16 @@ impl Config {
     pub fn get_profile_url(&self) -> String {
         build_profile_url(self.base_url.as_str(), self.full_username.as_str())
     }
+
+    pub fn get_login_url(&self) -> String {
+        build_login_url(self.base_url.as_str())
+    }
 }
 
 pub fn build_profile_url(base_url: &str, username: &str) -> String {
     format!("{}/_matrix/client/r0/profile/{}", base_url, username).to_owned()
+}
+
+pub fn build_login_url(base_url: &str) -> String {
+    format!("{}/_matrix/client/r0/login", base_url).to_owned()
 }

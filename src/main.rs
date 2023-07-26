@@ -2,7 +2,9 @@ mod api;
 mod config;
 
 use crate::{api::send_message, config::Config};
-use api::{login, verify_token, ApiError};
+use api::login::login;
+use api::verify_token::verify_token;
+use api::ApiError;
 use clap::Parser;
 
 /// A simple to use bot for sending text messages to a Matrix room
