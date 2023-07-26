@@ -11,7 +11,7 @@ A simple matrix bot written in rust.
   <img src="https://codecov.io/gh/dennis-lawter/matrix-bot/branch/master/graph/badge.svg" />
   <!-- unsafe forbidden -->
   <a href="https://github.com/rust-secure-code/safety-dance/">
-    <img src="https://img.shields.io/badge/unsafe-forbidden-success.svg?style=flat-square"
+    <img src="https://img.shields.io/badge/unsafe-forbidden-success.svg"
       alt="Unsafe Rust forbidden" />
   </a>
 </p>
