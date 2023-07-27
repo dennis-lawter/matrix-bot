@@ -3,8 +3,6 @@ A simple matrix bot written in rust.
 
 
 <p align="center">
-  <!-- version -->
-  <img src="https://img.shields.io/badge/version-0.1.0-blue"/>
   <!-- CI -->
   <img src="https://github.com/dennis-lawter/matrix-bot/workflows/CI/badge.svg" />
   <!-- codecov -->
