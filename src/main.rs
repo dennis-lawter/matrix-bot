@@ -3,9 +3,12 @@
 mod api;
 mod config;
 
-use crate::{api::send_message, config::Config};
-use api::login::login;
-use api::verify_token::verify_token;
+use crate::config::Config;
+use api::join_room;
+use api::login;
+use api::send_message;
+use api::verify_in_room;
+use api::verify_token;
 use api::ApiError;
 use clap::Parser;
 
@@ -23,36 +26,27 @@ struct Args {
 }
 
 #[async_std::main]
-async fn main() {
+async fn main() -> Result<(), ApiError> {
     let args = Args::parse();
-    let mut config = match Config::new("config.toml") {
-        Ok(c) => c,
-        Err(e) => {
-            eprintln!("Failed to create new config: {}", e);
-            return;
-        }
-    };
+    let mut config = Config::load("config.toml")?;
     let client = reqwest::Client::new();
 
-    match get_token(&config, &client).await {
-        Ok(token) => {
-            config.token = Some(token);
-            if let Err(e) = config.save("config.toml") {
-                eprintln!("Failed to save config: {}", e);
-                return;
-            }
-        }
-        Err(e) => {
-            eprintln!("Failed to get token: {}", e);
-            return;
-        }
-    };
+    let valid_token = get_token(&config, &client).await?;
+    config.token = Some(valid_token);
+    config.save("config.toml")?;
 
     let room = args.room;
+
+    if !verify_in_room(room.as_str(), &config, &client).await? {
+        join_room(room.as_str(), &config, &client).await?
+    }
+
     let message = args.message;
     if let Err(e) = send_message(message.as_str(), room.as_str(), &config, &client).await {
         eprintln!("Failed to send message: {}", e);
     }
+
+    Ok(())
 }
 
 async fn get_token(config: &Config, client: &reqwest::Client) -> Result<String, ApiError> {

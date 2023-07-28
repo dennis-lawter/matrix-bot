@@ -22,7 +22,7 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn new(config_filename: &str) -> Result<Self, ConfigError> {
+    pub fn load(config_filename: &str) -> Result<Self, ConfigError> {
         let contents = fs::read_to_string(config_filename)?;
         let config: Config = toml::from_str(&contents)?;
         Ok(config)
