@@ -40,6 +40,10 @@ impl Config {
     pub fn get_login_url(&self) -> String {
         build_login_url(self.base_url.as_str())
     }
+
+    pub(crate) fn get_join_url(&self, room_id: &str) -> String {
+        build_join_url(self.base_url.as_str(), room_id)
+    }
 }
 
 pub fn build_profile_url(base_url: &str, username: &str) -> String {
@@ -48,4 +52,8 @@ pub fn build_profile_url(base_url: &str, username: &str) -> String {
 
 pub fn build_login_url(base_url: &str) -> String {
     format!("{}/_matrix/client/r0/login", base_url)
+}
+
+pub fn build_join_url(base_url: &str, room_id: &str) -> String {
+    format!("{}/_matrix/client/r0/rooms/{}/join", base_url, room_id,)
 }

@@ -47,7 +47,7 @@ mod tests {
     use super::verify_token;
 
     #[tokio::test]
-    async fn verify_token_test() {
+    async fn test_verify_token() {
         let mut mock_server = mockito::Server::new();
 
         let base_url = format!("http://{}", mock_server.host_with_port());

@@ -65,7 +65,7 @@ mod tests {
     use super::login;
 
     #[tokio::test]
-    async fn login_test() {
+    async fn test_login() {
         let mut mock_server = mockito::Server::new();
 
         let base_url = format!("http://{}", mock_server.host_with_port());
