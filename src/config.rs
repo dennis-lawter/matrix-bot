@@ -41,8 +41,12 @@ impl Config {
         build_login_url(self.base_url.as_str())
     }
 
-    pub(crate) fn get_join_url(&self, room_id: &str) -> String {
-        build_join_url(self.base_url.as_str(), room_id)
+    pub(crate) fn get_join_url(&self, room: &str) -> String {
+        build_join_url(self.base_url.as_str(), room)
+    }
+
+    pub(crate) fn get_send_message_url(&self, room: &str) -> String {
+        build_send_message_url(self.base_url.as_str(), room)
     }
 }
 
@@ -54,6 +58,13 @@ pub fn build_login_url(base_url: &str) -> String {
     format!("{}/_matrix/client/r0/login", base_url)
 }
 
-pub fn build_join_url(base_url: &str, room_id: &str) -> String {
-    format!("{}/_matrix/client/r0/rooms/{}/join", base_url, room_id,)
+pub fn build_join_url(base_url: &str, room: &str) -> String {
+    format!("{}/_matrix/client/r0/rooms/{}/join", base_url, room,)
+}
+
+pub fn build_send_message_url(base_url: &str, room: &str) -> String {
+    format!(
+        "{}/_matrix/client/r0/rooms/{}/send/m.room.message",
+        base_url, room,
+    )
 }
