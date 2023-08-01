@@ -849,7 +849,7 @@ dependencies = [
 
 [[package]]
 name = "matrix-notify"
-version = "0.2.1"
+version = "0.3.1"
 dependencies = [
  "async-std",
  "clap",

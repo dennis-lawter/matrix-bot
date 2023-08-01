@@ -15,8 +15,6 @@ use api::ApiError;
 use clap::arg;
 use clap::crate_name;
 use clap::crate_version;
-use clap::Arg;
-use clap::ArgAction;
 use clap::Command;
 
 const CONFIG_FILE: &str = "matrix-notify.toml";
