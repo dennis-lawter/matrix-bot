@@ -847,8 +847,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "matrix-bot"
-version = "0.1.0"
+name = "matrix-notify"
+version = "0.2.0"
 dependencies = [
  "async-std",
  "clap",
