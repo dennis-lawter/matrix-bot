@@ -1,6 +1,5 @@
 # Matrix Bot
-A simple matrix bot written in rust.
-
+A command line tool for sending messages to a matrix chatroom.
 
 <p align="center">
   <!-- CI -->
