@@ -37,6 +37,8 @@ pub enum ApiError {
         status_code: reqwest::StatusCode,
         error_message: String,
     },
+    #[error("Cannot generate example config file when the config file already exists")]
+    ConfigAlreadyExists,
 }
 
 #[derive(Deserialize, Debug)]

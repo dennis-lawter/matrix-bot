@@ -3,6 +3,8 @@
 mod api;
 mod config;
 
+use std::fs;
+
 use crate::config::Config;
 use api::join_room;
 use api::login;
@@ -10,43 +12,74 @@ use api::send_message;
 use api::verify_in_room;
 use api::verify_token;
 use api::ApiError;
-use clap::Parser;
+use clap::arg;
+use clap::crate_name;
+use clap::crate_version;
+use clap::Arg;
+use clap::ArgAction;
+use clap::Command;
 
-/// A simple to use bot for sending text messages to a Matrix room
-#[derive(Parser, Debug)]
-#[command(author, version, about, long_about = None)]
-struct Args {
-    /// ID of the room receiving the message
-    #[arg(short, long)]
-    room: String,
+const CONFIG_FILE: &str = "matrix-notify.toml";
 
-    /// Message to send
-    #[arg(short, long)]
-    message: String,
+fn perform_generate() -> Result<(), ApiError> {
+    if fs::metadata(CONFIG_FILE).is_ok() {
+        eprintln!("{} already exists, if you intend to generate the example config, please remove this file first", CONFIG_FILE);
+        return Err(ApiError::ConfigAlreadyExists);
+    }
+    let config = Config {
+        base_url: "https://example.org".to_owned(),
+        local_username: "matrix-bot".to_owned(),
+        full_username: "@matrix-bot:example.org".to_owned(),
+        password: Some("Plaintext password, can be omitted if you have a token already".to_owned()),
+        token: Some(
+            "access_token from previous api calls, remove to populate via password driven login"
+                .to_owned(),
+        ),
+    };
+    config.save(CONFIG_FILE)?;
+
+    Ok(())
 }
 
-#[async_std::main]
-async fn main() -> Result<(), ApiError> {
-    let args = Args::parse();
-    let mut config = Config::load("config.toml")?;
+async fn perform_send_message(room: &str, message: &str) -> Result<(), ApiError> {
+    let mut config = Config::load(CONFIG_FILE)?;
     let client = reqwest::Client::new();
 
     let valid_token = get_token(&config, &client).await?;
     config.token = Some(valid_token);
-    config.save("config.toml")?;
+    config.save(CONFIG_FILE)?;
 
-    let room = args.room;
-
-    if !verify_in_room(room.as_str(), &config, &client).await? {
-        join_room(room.as_str(), &config, &client).await?
+    if !verify_in_room(room, &config, &client).await? {
+        join_room(room, &config, &client).await?
     }
 
-    let message = args.message;
-    if let Err(e) = send_message(message.as_str(), room.as_str(), &config, &client).await {
+    if let Err(e) = send_message(message, room, &config, &client).await {
         eprintln!("Failed to send message: {}", e);
     }
 
     Ok(())
+}
+
+#[async_std::main]
+async fn main() -> Result<(), ApiError> {
+    let m = Command::new(crate_name!())
+        .version(crate_version!())
+        .about("A command line tool for sending messages to a matrix chatroom")
+        .arg(arg!(-r --room <ROOM_ID> "Room ID, typically in the format !roomid:matrix.org"))
+        .arg(arg!(-m --message <MESSAGE> "Text to be sent"))
+        .subcommand(Command::new("generate").about("Generates an example config file"))
+        .get_matches();
+    if m.subcommand_matches("generate").is_some() {
+        perform_generate()
+    } else {
+        let room = m
+            .get_one::<String>("room")
+            .expect("ROOM_ID must be provided, please see --help");
+        let message = m
+            .get_one::<String>("message")
+            .expect("MESSAGE must be provided, please see --help");
+        perform_send_message(room.as_str(), message.as_str()).await
+    }
 }
 
 async fn get_token(config: &Config, client: &reqwest::Client) -> Result<String, ApiError> {
