@@ -1,6 +1,6 @@
 [package]
 name = "matrix-notify"
-version = "0.3.1"
+version = "0.3.2"
 edition = "2021"
 description = "A command line tool for sending messages to a matrix chatroom."
 license-file = "LICENSE"
