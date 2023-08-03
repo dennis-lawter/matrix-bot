@@ -58,7 +58,7 @@ async fn perform_send_message(room: &str, message: &str) -> Result<(), ApiError>
     Ok(())
 }
 
-#[async_std::main]
+#[tokio::main]
 async fn main() -> Result<(), ApiError> {
     let m = Command::new(crate_name!())
         .version(crate_version!())

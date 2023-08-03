@@ -1,16 +1,22 @@
-# Matrix Bot
-A command line tool for sending messages to a matrix chatroom.
+# Matrix Notify
+A command line tool for sending messages to matrix chatrooms.
 
 <p align="center">
-  <!-- CI -->
-  <img src="https://github.com/dennis-lawter/matrix-bot/workflows/CI/badge.svg" />
-  <!-- codecov -->
-  <img src="https://codecov.io/gh/dennis-lawter/matrix-bot/branch/master/graph/badge.svg" />
+  <!-- version -->
+  <a href="https://crates.io/crates/matrix-notify">
+    <img alt="Crates.io" src="https://img.shields.io/crates/v/matrix-notify">
+  </a>
+  <!-- downloads -->
+  <img alt="Crates.io (latest)" src="https://img.shields.io/crates/dv/matrix-notify">
   <!-- unsafe forbidden -->
   <a href="https://github.com/rust-secure-code/safety-dance/">
-    <img src="https://img.shields.io/badge/unsafe-forbidden-success.svg"
-      alt="Unsafe Rust forbidden" />
+    <img alt="Unsafe Rust forbidden" src="https://img.shields.io/badge/unsafe-forbidden-success.svg">
   </a>
+  <br>
+  <!-- CI -->
+  <img alt="CI status" src="https://github.com/dennis-lawter/matrix-bot/workflows/CI/badge.svg">
+  <!-- codecov -->
+  <img alt="Code coverage" src="https://codecov.io/gh/dennis-lawter/matrix-bot/branch/master/graph/badge.svg">
 </p>
 
 ## Config
@@ -31,8 +37,8 @@ token = "access_token from previous api calls"
 
 ## Usage
 ```bash
-matrix-bot --help
+matrix-notify --help
 ```
 ```bash
-matrix-bot --room "\!roomid:matrix.org" --message "Lorem ipsum dolor sit amet"
+matrix-notify --room "\!roomid:matrix.org" --message "Lorem ipsum dolor sit amet"
 ```
