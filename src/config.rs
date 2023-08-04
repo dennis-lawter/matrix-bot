@@ -12,7 +12,7 @@ pub enum ConfigError {
     TomlDeserialize(#[from] toml::de::Error),
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
 pub struct Config {
     pub base_url: String,
     pub local_username: String,
@@ -67,4 +67,162 @@ pub fn build_send_message_url(base_url: &str, room: &str) -> String {
         "{}/_matrix/client/r0/rooms/{}/send/m.room.message",
         base_url, room,
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use matches::assert_matches;
+    use std::{fs, io::Write};
+    use tempfile::NamedTempFile;
+
+    use crate::config::{Config, ConfigError};
+
+    const FULL_CONFIG_CONTENTS: &str = r#"
+base_url = "https://example.org"
+local_username = "matrix-bot"
+full_username = "@matrix-bot:example.org"
+password = "Plaintext password"
+token = "access_token from previous api calls"
+"#;
+    #[tokio::test]
+    async fn test_full_config_load() {
+        let mut temp_file = NamedTempFile::new().expect("Failed to create temporary file");
+        write!(temp_file, "{}", FULL_CONFIG_CONTENTS).expect("Failed to write to temporary file");
+
+        let loaded_config = Config::load(temp_file.path().to_str().unwrap()).unwrap();
+
+        let expected_config = Config {
+            base_url: "https://example.org".to_string(),
+            local_username: "matrix-bot".to_string(),
+            full_username: "@matrix-bot:example.org".to_string(),
+            password: Some("Plaintext password".to_string()),
+            token: Some("access_token from previous api calls".to_string()),
+        };
+
+        assert_eq!(loaded_config, expected_config);
+    }
+
+    const NO_TOKEN_CONFIG_CONTENTS: &str = r#"
+base_url = "https://example.org"
+local_username = "matrix-bot"
+full_username = "@matrix-bot:example.org"
+password = "Plaintext password"
+"#;
+    #[tokio::test]
+    async fn test_no_token_config_load() {
+        let mut temp_file = NamedTempFile::new().expect("Failed to create temporary file");
+        write!(temp_file, "{}", NO_TOKEN_CONFIG_CONTENTS)
+            .expect("Failed to write to temporary file");
+
+        let loaded_config = Config::load(temp_file.path().to_str().unwrap()).unwrap();
+
+        let expected_config = Config {
+            base_url: "https://example.org".to_string(),
+            local_username: "matrix-bot".to_string(),
+            full_username: "@matrix-bot:example.org".to_string(),
+            password: Some("Plaintext password".to_string()),
+            token: None,
+        };
+
+        assert_eq!(loaded_config, expected_config);
+    }
+
+    const NO_PASSWORD_CONFIG_CONTENTS: &str = r#"
+base_url = "https://example.org"
+local_username = "matrix-bot"
+full_username = "@matrix-bot:example.org"
+token = "access_token from previous api calls"
+"#;
+    #[tokio::test]
+    async fn test_no_password_config_load() {
+        let mut temp_file = NamedTempFile::new().expect("Failed to create temporary file");
+        write!(temp_file, "{}", NO_PASSWORD_CONFIG_CONTENTS)
+            .expect("Failed to write to temporary file");
+
+        let loaded_config = Config::load(temp_file.path().to_str().unwrap()).unwrap();
+
+        let expected_config = Config {
+            base_url: "https://example.org".to_string(),
+            local_username: "matrix-bot".to_string(),
+            full_username: "@matrix-bot:example.org".to_string(),
+            password: None,
+            token: Some("access_token from previous api calls".to_string()),
+        };
+
+        assert_eq!(loaded_config, expected_config);
+    }
+
+    const NO_BASE_URL_CONFIG_CONTENTS: &str = r#"
+local_username = "matrix-bot"
+full_username = "@matrix-bot:example.org"
+password = "Plaintext password"
+token = "access_token from previous api calls"
+"#;
+    #[tokio::test]
+    async fn test_fail_config_load_without_base_url() {
+        let mut temp_file = NamedTempFile::new().expect("Failed to create temporary file");
+        write!(temp_file, "{}", NO_BASE_URL_CONFIG_CONTENTS)
+            .expect("Failed to write to temporary file");
+
+        let loaded_config = Config::load(temp_file.path().to_str().unwrap());
+
+        assert!(loaded_config.is_err());
+        assert_matches!(loaded_config.unwrap_err(), ConfigError::TomlDeserialize(_));
+    }
+
+    const NO_LOCAL_USERNAME_CONFIG_CONTENTS: &str = r#"
+base_url = "https://example.org"
+full_username = "@matrix-bot:example.org"
+password = "Plaintext password"
+token = "access_token from previous api calls"
+"#;
+    #[tokio::test]
+    async fn test_fail_config_load_without_local_username() {
+        let mut temp_file = NamedTempFile::new().expect("Failed to create temporary file");
+        write!(temp_file, "{}", NO_LOCAL_USERNAME_CONFIG_CONTENTS)
+            .expect("Failed to write to temporary file");
+
+        let loaded_config = Config::load(temp_file.path().to_str().unwrap());
+
+        assert!(loaded_config.is_err());
+        assert_matches!(loaded_config.unwrap_err(), ConfigError::TomlDeserialize(_));
+    }
+
+    const NO_FULL_USERNAME_CONFIG_CONTENTS: &str = r#"
+base_url = "https://example.org"
+local_username = "matrix-bot"
+password = "Plaintext password"
+token = "access_token from previous api calls"
+"#;
+    #[tokio::test]
+    async fn test_fail_config_load_without_full_username() {
+        let mut temp_file = NamedTempFile::new().expect("Failed to create temporary file");
+        write!(temp_file, "{}", NO_FULL_USERNAME_CONFIG_CONTENTS)
+            .expect("Failed to write to temporary file");
+
+        let loaded_config = Config::load(temp_file.path().to_str().unwrap());
+
+        assert!(loaded_config.is_err());
+        assert_matches!(loaded_config.unwrap_err(), ConfigError::TomlDeserialize(_));
+    }
+
+    #[tokio::test]
+    async fn test_config_save() {
+        let temp_file = NamedTempFile::new().expect("Failed to create temporary file");
+
+        let config = Config {
+            base_url: "https://example.org".to_string(),
+            local_username: "matrix-bot".to_string(),
+            full_username: "@matrix-bot:example.org".to_string(),
+            password: Some("Plaintext password".to_string()),
+            token: Some("access_token from previous api calls".to_string()),
+        };
+        let save_result = config.save(temp_file.path().to_str().unwrap());
+        assert!(save_result.is_ok());
+        let metadata_result = fs::metadata(temp_file.path().to_str().unwrap());
+        assert!(metadata_result.is_ok());
+        let metadata = metadata_result.unwrap();
+        assert!(metadata.is_file());
+        assert!(metadata.len() > 0);
+    }
 }
