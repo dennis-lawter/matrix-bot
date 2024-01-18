@@ -5,9 +5,7 @@ use std::{
     env::set_current_dir,
     fs::{self, File},
     io::Write,
-    path::Path,
     process::Command,
-    thread, time,
 };
 use tempfile::{tempdir, TempDir};
 
@@ -47,17 +45,6 @@ fn test_generate() -> Result<(), Box<dyn std::error::Error>> {
         .stdout(predicate::str::contains("matrix-notify.toml"));
 
     let temp_file = temp_dir.path().join("matrix-notify.toml");
-
-    // let start = time::Instant::now();
-    // let timeout = time::Duration::from_secs(5);
-    // let mut file_exists = false;
-
-    // while start.elapsed() < timeout || file_exists {
-    //     if Path::new(&temp_file).exists() {
-    //         file_exists = true;
-    //     }
-    //     thread::sleep(time::Duration::from_millis(100));
-    // }
 
     let metadata_result = fs::metadata(temp_file.to_str().unwrap());
     assert!(
