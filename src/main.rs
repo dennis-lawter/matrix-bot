@@ -1,21 +1,18 @@
 #![forbid(unsafe_code)]
 
-mod api;
-mod config;
-
 use std::fs;
 
-use crate::config::Config;
-use api::join_room;
-use api::login;
-use api::send_message;
-use api::verify_in_room;
-use api::verify_token;
-use api::ApiError;
 use clap::arg;
 use clap::crate_name;
 use clap::crate_version;
 use clap::Command;
+use matrix_notify::api::join_room;
+use matrix_notify::api::login;
+use matrix_notify::api::send_message;
+use matrix_notify::api::verify_in_room;
+use matrix_notify::api::verify_token;
+use matrix_notify::api::ApiError;
+use matrix_notify::config::Config;
 
 const CONFIG_FILE: &str = "matrix-notify.toml";
 
@@ -35,6 +32,7 @@ fn perform_generate() -> Result<(), ApiError> {
         ),
     };
     config.save(CONFIG_FILE)?;
+    println!("An example config has been generated, see {}", CONFIG_FILE);
 
     Ok(())
 }

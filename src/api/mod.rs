@@ -8,6 +8,7 @@ pub mod verify_in_room;
 pub use verify_in_room::verify_in_room;
 pub mod verify_token;
 pub use verify_token::verify_token;
+pub mod mock_server;
 
 use serde::Deserialize;
 use thiserror::Error;

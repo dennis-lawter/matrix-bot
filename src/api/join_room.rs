@@ -7,9 +7,9 @@ use super::ApiError;
 pub async fn join_room(room: &str, config: &Config, client: &Client) -> Result<(), ApiError> {
     match &config.token {
         Some(token) => {
-            let join_url = config.get_join_url(room);
+            let join_url = config.get_join_room_url(room);
             let join_response = client
-                .post(join_url)
+                .post(&join_url)
                 .bearer_auth(token.as_str())
                 .send()
                 .await?;
@@ -51,7 +51,7 @@ mod tests {
 
         let room: String = Word().fake();
 
-        let full_join_url = config.get_join_url(room.as_str());
+        let full_join_url = config.get_join_room_url(room.as_str());
         let join_url = full_join_url
             .strip_prefix(base_url.as_str())
             .expect("Base URL missing from profile url");

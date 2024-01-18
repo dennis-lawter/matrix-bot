@@ -21,8 +21,6 @@ pub async fn verify_token(
             url: profile_url_clone,
         })?;
 
-    // panic!("{:?}", response.text().await);
-
     if !response.status().is_success() {
         let status = response.status();
         let text = response.text().await.unwrap_or_default();

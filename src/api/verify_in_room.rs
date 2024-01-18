@@ -12,11 +12,7 @@ pub async fn verify_in_room(
 ) -> Result<bool, ApiError> {
     match &config.token {
         Some(token) => {
-            let join_url = format!(
-                "{}/_matrix/client/r0/rooms/{}/joined_members",
-                config.base_url.as_str(),
-                room,
-            );
+            let join_url = config.get_room_members_url(room);
             let join_response = client
                 .get(join_url)
                 .bearer_auth(token.as_str())

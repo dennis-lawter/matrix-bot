@@ -31,4 +31,4 @@ jobs:
       - name: Check With Clippy
         run: cargo clippy --all-features
       - name: Run Tests
-        run: cargo test --all-features
+        run: RUST_TEST_THREADS=1 cargo test --all-features

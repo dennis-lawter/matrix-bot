@@ -14,7 +14,7 @@ impl MessageSendRequestBody {
     fn new(body: &str) -> Self {
         Self {
             msgtype: "m.text".to_owned(),
-            body: body.to_owned(),
+            body: body.to_owned().replace("\\n", "\n").replace("\\\\", "\\"),
         }
     }
 }
